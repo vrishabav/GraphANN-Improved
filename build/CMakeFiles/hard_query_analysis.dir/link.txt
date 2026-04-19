@@ -1,0 +1,3 @@
+C:\mingw64\bin\cmake.exe -E rm -f CMakeFiles\hard_query_analysis.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\hard_query_analysis.dir/objects.a @CMakeFiles\hard_query_analysis.dir\objects1.rsp
+C:\msys64\ucrt64\bin\c++.exe -O3 -march=native -DNDEBUG -Wl,--whole-archive CMakeFiles\hard_query_analysis.dir/objects.a -Wl,--no-whole-archive -o hard_query_analysis.exe -Wl,--out-implib,libhard_query_analysis.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\hard_query_analysis.dir\linkLibs.rsp
