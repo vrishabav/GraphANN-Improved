@@ -2,14 +2,6 @@
 
 **DA2303 — Algorithms for Data Science, Project Milestone 2**
 
-| Team Member | Roll No. | Contribution |
-|---|---|---|
-| Vrishabav | DA24B033 | Section 2 build improvements, hard-query analysis, ablation framework |
-| Rohan | DA24B004 | Section 2 build improvements, PCA traversal, multi-entry-point search |
-| [Third member] | DA24B049 | [Fill in] |
-
----
-
 ## Overview
 
 This project implements **Vamana**, the graph-based approximate nearest neighbor (ANN) algorithm from the NeurIPS 2019 paper *DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node*. It builds a navigable Directed graph over 1M 128-dimensional SIFT vectors, enabling sub-millisecond semantic search with 99%+ recall.
