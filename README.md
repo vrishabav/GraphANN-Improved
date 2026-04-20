@@ -1,6 +1,6 @@
 # GraphANN — Vamana Index for Approximate Nearest Neighbor Search
 
-**DA2303 — Algorithms for Data Science, Project Milestone 2**
+**DA2303 — Algorithms for Data Science, Milestone 2**
 
 ## Overview
 
