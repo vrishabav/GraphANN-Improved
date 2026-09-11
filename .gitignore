@@ -1,0 +1,33 @@
+# Build artifacts
+build/
+*.bin
+*.fbin
+*.ibin
+
+# Report (essentials merged into README.md)
+REPORT.md
+
+# Data directories
+tmp/
+data/
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cache/
+
+# Compiled objects
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.out

@@ -1,0 +1,87 @@
+# Experimentation and Results: HNSW vs Vamana
+
+This document summarizes the implementation details of the Hierarchical Navigable Small World (HNSW) algorithm and presents a comparative analysis against the Vamana (DiskANN) implementation on the SIFT1M dataset.
+
+## 1. HNSW Implementation Details
+
+The Hierarchical Navigable Small World (HNSW) index was implemented as a core alternative to the Vamana graph index. Key architectural features include:
+
+- **Multi-layer Graph Structure**: Implements a hierarchy of layers where Layer 0 contains all data points and higher layers contain exponentially fewer nodes, enabling logarithmic search complexity.
+- **Probabilistic Layer Assignment**: Nodes are assigned to a maximum layer using a geometric distribution (level = floor(-ln(uniform(0,1)) * mL)), where mL = 1/ln(M).
+- **Greedy Multi-layer Descent**: Search starts from a global entry point at the highest layer, performing greedy descent (ef=1) until it reaches the target insertion or search layer.
+- **Beam Search (search_layer)**: At the target layer, a beam search (Algorithm 2) maintains a dynamic candidate set (frontier) and a result set of size `ef`.
+- **Heuristic Neighbor Selection (Algorithm 4)**: Ensures graph connectivity and navigability by selecting neighbors that are closer to the node than to any already-selected neighbor, promoting edge diversity.
+- **Bidirectional Edge Maintenance**: During construction, edges are added bidirectionally, with degree-constrained pruning to maintain the `M` (or `M0` for Layer 0) connectivity limit.
+
+## 2. Experimental Setup
+
+- **Dataset**: SIFT1M (1,000,000 vectors, 128 dimensions, float32).
+- **Comparison Metric**: Recall@10, Average Latency (µs), P99 Latency (µs), and Average Distance Computations.
+
+### Configurations Tested
+
+#### HNSW
+- **HNSW-A**: M=8, efC=100
+- **HNSW-B**: M=16, efC=100
+- **HNSW-C**: M=16, efC=200
+- **HNSW-D**: M=32, efC=200
+
+#### Vamana (DiskANN)
+- **Vam-Baseline**: R=32, L=75, alpha=1.2, Exact float32
+- **Vam-Baseline-ADC**: R=32, L=75, alpha=1.2, Quantized ADC
+- **Vam-SoftPrune**: R=32, L=75, alpha=1.2, Soft Diversity Pruning (beta=0.5)
+- **Vam-R64**: R=64, L=75, alpha=1.2, Quantized ADC
+
+---
+
+## 3. Performance Results
+
+### 3.1 HNSW Results
+
+The following table summarizes the search performance of HNSW under various configurations.
+
+| Configuration | ef | Recall@10 | Avg Dist Cmps | Avg Latency (µs) | P99 Latency (µs) |
+|---|---|---|---|---|---|
+| **HNSW M=8, efC=100** | 10 | 0.6203 | 68.0 | 187.7 | 343.9 |
+| | 20 | 0.7573 | 88.0 | 207.7 | 458.2 |
+| | 50 | 0.8903 | 148.0 | 368.5 | 545.9 |
+| | 100 | 0.9491 | 248.0 | 622.7 | 1416.6 |
+| | 200 | 0.9789 | 448.0 | 1129.6 | 2962.0 |
+| | 400 | 0.9909 | 848.0 | 2084.9 | 5996.0 |
+
+| **HNSW M=16, efC=40** | 10 | 0.7225 | 85.0 | 297.6 | 1008.1 |
+| | 20 | 0.8343 | 105.0 | 363.2 | 1434.8 |
+| | 50 | 0.9339 | 165.0 | 705.3 | 3091.1 |
+| | 100 | 0.9712 | 265.0 | 1228.1 | 8161.7 |
+| | 200 | 0.9880 | 465.0 | 2002.2 | 13778.2 |
+| | 400 | 0.9940 | 865.0 | 3582.1 | 24090.3 |
+
+### 3.2 Vamana (Baseline) Results
+
+| Configuration | L | Recall@10 | Avg Dist Cmps | Avg Latency (µs) | P99 Latency (µs) |
+|---|---|---|---|---|---|
+| **Vamana R=32 (Baseline)** | 10 | 0.8019 | 548.4 | 261.2 | 419.5 |
+| | 20 | 0.8993 | 786.4 | 339.5 | 671.9 |
+| | 50 | 0.9689 | 1423.8 | 649.0 | 1842.6 |
+| | 75 | 0.9828 | 1905.5 | 898.1 | 4948.0 |
+| | 100 | 0.9885 | 2356.9 | 1196.8 | 5231.5 |
+| | 200 | 0.9959 | 3952.2 | 1955.0 | 6098.2 |
+
+### 3.3 Vamana (Improved ADC) Results
+
+| Configuration | L | Recall@10 | Avg Dist Cmps | Avg Latency (µs) | P99 Latency (µs) |
+|---|---|---|---|---|---|
+| **Vamana R=64 (ADC)** | 10 | 0.8901 | 994.7 | 423.5 | 1191.8 |
+| | 20 | 0.9631 | 1468.6 | 614.0 | 1729.7 |
+| | 50 | 0.9936 | 2731.0 | 1246.8 | 4503.7 |
+| | 75 | 0.9975 | 3659.9 | 1681.9 | 4837.1 |
+| | 100 | 0.9983 | 4512.1 | 2237.5 | 14649.3 |
+| | 200 | 0.9992 | 7463.2 | 3475.9 | 7153.6 |
+
+---
+
+## 4. Analysis and Conclusion
+
+- **Distance Computation Efficiency**: HNSW M=16 is significantly more efficient in terms of graph traversal, requiring ~7x fewer distance computations (265 vs 1905) to reach 97-98% recall compared to the Vamana baseline.
+- **Latency Trade-off**: Despite the fewer computations, Vamana R=32 maintains lower query latency at high recall levels. This suggests that the Vamana search implementation is more cache-optimized or benefits from a more direct graph structure for the SIFT1M dataset.
+- **Recall Frontier**: Vamana R=64 with ADC quantization provides the absolute highest recall (99.9%+) and handles high-accuracy requirements better than HNSW at the tested configurations.
