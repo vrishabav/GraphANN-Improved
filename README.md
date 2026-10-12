@@ -1,13 +1,6 @@
 # GraphANN — Vamana Index for Approximate Nearest Neighbor Search
 
 **DA2303 — Algorithms for Data Science, Project Milestone 2**
-
-| Team Member | Roll No. | Contribution |
-|---|---|---|
-| Vrishabav | DA24B033 | Section 2 build improvements, hard-query analysis, ablation framework |
-| Rohan | DA24B004 | Section 2 build improvements, PCA traversal, multi-entry-point search |
-| [Third member] | DA24B049 | [Fill in] |
-
 ---
 
 ## Overview
