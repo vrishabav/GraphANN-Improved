@@ -11,6 +11,13 @@
 float compute_l2sq(const float *a, const float *b, uint32_t dim)
 {
     float sum = 0.0f;
+#ifdef GRAPHANN_SIMD_REDUCTION
+    // Without -ffast-math the compiler must add the 128 squared differences
+    // strictly in order, which turns the reduction into one long serial chain
+    // of scalar adds even though the subtract/multiply are vectorised. Allowing
+    // a reordered (tree) reduction lets it keep 8-wide accumulators.
+#pragma omp simd reduction(+ : sum)
+#endif
     for (uint32_t i = 0; i < dim; i++)
     {
         float diff = a[i] - b[i];
@@ -27,11 +34,22 @@ float compute_l2sq_ea(const float *a, const float *b, uint32_t dim,
     // Process in 16-dim blocks — inner loop auto-vectorizes with -O3
     for (; i + 16 <= dim; i += 16)
     {
+#ifdef GRAPHANN_SIMD_REDUCTION
+        float block = 0.0f;
+#pragma omp simd reduction(+ : block)
+        for (uint32_t j = i; j < i + 16; j++)
+        {
+            float diff = a[j] - b[j];
+            block += diff * diff;
+        }
+        sum += block;
+#else
         for (uint32_t j = i; j < i + 16; j++)
         {
             float diff = a[j] - b[j];
             sum += diff * diff;
         }
+#endif
         if (sum > threshold)
             return FLT_MAX; // early abandon
     }

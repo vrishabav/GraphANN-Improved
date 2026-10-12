@@ -31,3 +31,15 @@ Desktop.ini
 *.dll
 *.exe
 *.out
+
+# SIFT1M raw downloads and split parts (about 1 GB; never commit)
+SIFT1M/
+*.fvecs
+*.ivecs
+sift_base.part_*
+
+# Extra build trees and benchmark logs (scripts/benchmark_sift1m.sh)
+build_*/
+logs/
+logs_run.txt
+__pycache__/

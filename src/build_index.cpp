@@ -27,6 +27,7 @@ static void print_usage(const char *prog)
               << " [--single_pass]"
               << " [--refine_quant]"
               << " [--soft_prune] [--soft_beta <beta=0.5>]"
+              << " [--baseline]"
               << std::endl;
 }
 
@@ -40,6 +41,7 @@ int main(int argc, char **argv)
     float gamma = 1.5f;
     uint32_t entry_points = 1;
     bool two_pass = true;
+    bool baseline = false;
     bool refine_quant = false;
     bool soft_prune = false;
     float soft_beta = 0.5f;
@@ -62,6 +64,8 @@ int main(int argc, char **argv)
             gamma = std::atof(argv[++i]);
         else if (arg == "--entry_points" && i + 1 < argc)
             entry_points = std::atoi(argv[++i]);
+        else if (arg == "--baseline")
+            baseline = true;
         else if (arg == "--single_pass")
             two_pass = false;
         else if (arg == "--refine_quant")
@@ -91,6 +95,7 @@ int main(int argc, char **argv)
     std::cout << "  gamma = " << gamma << std::endl;
     std::cout << "  entry_points = " << entry_points << std::endl;
     std::cout << "  two_pass     = " << (two_pass ? "yes" : "no") << std::endl;
+    std::cout << "  baseline     = " << (baseline ? "yes (random start, empty init, top-L prune)" : "no") << std::endl;
     std::cout << "  refine_quant = " << (refine_quant ? "yes" : "no") << std::endl;
     std::cout << "  soft_prune   = " << (soft_prune ? "yes" : "no") << std::endl;
     if (soft_prune)
@@ -100,7 +105,7 @@ int main(int argc, char **argv)
 
     Timer total_timer;
     index.build(data_path, R, L, alpha, gamma, entry_points, two_pass,
-                soft_prune, soft_beta);
+                soft_prune, soft_beta, baseline);
     double total_time = total_timer.elapsed_seconds();
 
     std::cout << "\nTotal build time: " << total_time << " seconds" << std::endl;

@@ -86,6 +86,10 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
                            bool dynamic_L, float dyn_floor_ratio,
                            float dyn_exp_mult, uint32_t dyn_hops) const
 {
+    // Search-only shortcuts (early termination, early abandoning, lock-free
+    // neighbour reads) are valid only when no build is running.
+    const bool search_mode = !return_visited && !building_;
+
     // Candidate list: sorted by (distance, id), bounded at size L.
     std::vector<Candidate> candidates;
     candidates.reserve(L + 1);
@@ -189,7 +193,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
         // best candidate distance hasn't improved meaningfully in the last
         // several expansions, stop early. Saves ~15-20% compute on easy queries
         // with negligible recall loss since remaining candidates are far away.
-        if (!return_visited && !dynamic_L && candidates.size() >= (size_t)L)
+        if (search_mode && !dynamic_L && candidates.size() >= (size_t)L)
         {
             float current_best = candidates[0].first;
             float frontier_dist = candidates[expand_pos > 0 ? expand_pos - 1 : 0].first;
@@ -205,7 +209,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
         // directly without locking or copying — eliminates malloc per expansion.
         std::vector<uint32_t> neighbors_copy;
         const std::vector<uint32_t> *nbrs_ptr;
-        if (return_visited)
+        if (!search_mode)
         {
             std::lock_guard<std::mutex> lock(locks_[best_node]);
             neighbors_copy = graph_[best_node];
@@ -234,7 +238,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
             // Early-abandon: only applies when the candidate list is full.
             // During build (return_visited=true) we must NOT early-abandon because
             // we need the true distance for every visited node to pass to robust_prune.
-            float threshold = (!return_visited && candidates.size() >= L)
+            float threshold = (search_mode && candidates.size() >= L)
                                   ? candidates.back().first
                                   : FLT_MAX;
             float d = compute_l2sq_ea(query, get_vector(nbr), dim_, threshold);
@@ -458,7 +462,8 @@ void VamanaIndex::robust_prune_soft(uint32_t node, std::vector<Candidate> &candi
 
 void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
                         float alpha, float gamma, uint32_t num_entry_points,
-                        bool two_pass, bool soft_prune, float soft_beta)
+                        bool two_pass, bool soft_prune, float soft_beta,
+                        bool baseline)
 {
     num_entry_points_ = num_entry_points;
     // --- Load data ---
@@ -519,7 +524,15 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
         }
         start_node_ = best_id;
     }
-    std::cout << "  Medoid (start node): " << start_node_ << std::endl;
+    if (baseline)
+    {
+        // Baseline: random start node instead of the medoid.
+        std::mt19937 rng_start(42);
+        start_node_ = rng_start() % npts_;
+        std::cout << "  [baseline] Random start node: " << start_node_ << std::endl;
+    }
+    else
+        std::cout << "  Medoid (start node): " << start_node_ << std::endl;
 
     // THE FIX: initialize entry_points_ to the medoid immediately so that
     // best_entry_point() never accesses an empty vector during the build loop.
@@ -531,8 +544,9 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
     // Paper (Section 2.3): "initialize G to a random R-regular directed graph"
     // This bootstraps connectivity so early insertions have meaningful search paths,
     // unlike starting from an empty graph where early points have no neighbors.
-    std::cout << "Pre-initializing random R-regular graph..." << std::endl;
+    if (!baseline)
     {
+        std::cout << "Pre-initializing random R-regular graph..." << std::endl;
         std::mt19937 rng(42);
         for (uint32_t i = 0; i < npts_; i++)
         {
@@ -555,6 +569,8 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
                 graph_[i].push_back(pool[j]);
         }
     }
+    else
+        std::cout << "  [baseline] Starting from an empty graph" << std::endl;
 
     // --- FIX 3: Two-pass build ---
     // Paper (Section 2.3): "two passes over the dataset, the first pass with α=1,
@@ -594,7 +610,7 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
             // Pass full visited set V to robust_prune in pass 1 only.
             // In pass 2 the graph is already well-connected so top-L is sufficient
             // and avoids the memory overhead of collecting the full visited set.
-            bool collect_visited = (pass_num == 1);
+            bool collect_visited = (pass_num == 1) && !baseline;
             auto result = greedy_search(get_vector(point), L, collect_visited);
 
             // Pass 1: use full visited set for better long-range edge candidates
@@ -603,15 +619,26 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
                                                            ? result.visited
                                                            : result.candidates;
 
-            // Choose pruning strategy: hard alpha-RNG or soft angular diversity
-            if (soft_prune)
-                robust_prune_soft(point, prune_candidates, pass_alpha, R, soft_beta);
-            else
-                robust_prune(point, prune_candidates, pass_alpha, R);
+            // Choose pruning strategy: hard alpha-RNG or soft angular diversity.
+            // Hold this node's lock while its adjacency list is rewritten: other
+            // threads copy graph_[point] under the same lock during their searches,
+            // and an unlocked move-assignment here is a data race (it segfaults
+            // reliably when the graph starts empty).
+            std::vector<uint32_t> out_nbrs;
+            {
+                std::lock_guard<std::mutex> lock(locks_[point]);
+                if (soft_prune)
+                    robust_prune_soft(point, prune_candidates, pass_alpha, R, soft_beta);
+                else
+                    robust_prune(point, prune_candidates, pass_alpha, R);
+                out_nbrs = graph_[point]; // snapshot: others may append backward edges
+            }
 
             // Add backward edges
-            for (uint32_t nbr : graph_[point])
+            for (uint32_t nbr : out_nbrs)
             {
+                if (nbr == point)
+                    continue;
                 std::lock_guard<std::mutex> lock(locks_[nbr]);
                 graph_[nbr].push_back(point);
 
@@ -653,6 +680,7 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
     };
 
     Timer build_timer;
+    building_ = true;
 
     if (two_pass)
     {
@@ -673,6 +701,7 @@ void VamanaIndex::build(const std::string &data_path, uint32_t R, uint32_t L,
     }
 
     double build_time = build_timer.elapsed_seconds();
+    building_ = false;
 
     size_t total_edges = 0;
     for (uint32_t i = 0; i < npts_; i++)

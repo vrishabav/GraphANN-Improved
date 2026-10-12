@@ -17,6 +17,14 @@ endif()
 # Find OpenMP
 find_package(OpenMP REQUIRED)
 
+# Opt-in: let the compiler reorder the float reduction in the L2 kernels so it
+# can keep vector accumulators (see src/distance.cpp). Off by default so the
+# original numerics are unchanged unless you ask for it.
+option(GRAPHANN_SIMD_REDUCTION "Vectorised float reduction in L2 kernels" OFF)
+if(GRAPHANN_SIMD_REDUCTION)
+    add_compile_definitions(GRAPHANN_SIMD_REDUCTION)
+endif()
+
 # ---- Vamana library (shared sources) ----
 add_library(graphann_lib STATIC
     src/distance.cpp

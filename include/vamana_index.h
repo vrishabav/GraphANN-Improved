@@ -50,7 +50,11 @@ public:
   void build(const std::string &data_path, uint32_t R, uint32_t L,
              float alpha, float gamma, uint32_t num_entry_points = 1,
              bool two_pass = true, bool soft_prune = false,
-             float soft_beta = 0.5f);
+             float soft_beta = 0.5f, bool baseline = false);
+  // baseline=true reproduces the unimproved course-template build for
+  // like-for-like comparison: random start node, empty initial graph, and
+  // RobustPrune over the top-L candidate list instead of the full visited set.
+  // Default (false) keeps every build improvement on, exactly as before.
 
   // ---- Search ----
   // Search for K nearest neighbors of a query vector.
@@ -191,6 +195,10 @@ private:
   // ---- Concurrency ----
   // Per-node locks for parallel build (mutable so search can be const).
   mutable std::vector<std::mutex> locks_;
+  // True only while build() runs. greedy_search() must lock and must not use
+  // search-only shortcuts during a build, even when it is not collecting the
+  // visited set (pass 2 of a two-pass build, and the --baseline build).
+  bool building_ = false;
 
   // ---- Helpers ----
   const float *get_vector(uint32_t id) const
