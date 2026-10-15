@@ -13,7 +13,7 @@ struct HNSWSearchResult {
     double latency_us;          // search latency in microseconds
 };
 
-// HNSW — Hierarchical Navigable Small World graph index.
+// HNSW - Hierarchical Navigable Small World graph index.
 //
 // Reference: Malkov & Yashunin, "Efficient and robust approximate nearest
 // neighbor search using Hierarchical Navigable Small World graphs",
@@ -30,7 +30,7 @@ struct HNSWSearchResult {
 //   - Search: greedy descent from top layer to layer 1, then beam search
 //     at layer 0 with ef=efSearch.
 //   - Heuristic neighbor selection (Algorithm 4): keeps candidates that are
-//     closer to the new node than to any already-selected neighbor — ensures
+//     closer to the new node than to any already-selected neighbor - ensures
 //     diversity and long-range navigability.
 class HNSWIndex {
 public:

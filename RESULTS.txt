@@ -40,6 +40,8 @@ The Hierarchical Navigable Small World (HNSW) index was implemented as a core al
 
 The following table summarizes the search performance of HNSW under various configurations.
 
+> **Note on "Avg Dist Cmps" for HNSW:** these are not measured. `HNSWIndex::search()` estimates them as `2 × (layer-0 result size)` plus the upper-layer degrees (`src/hnsw_index.cpp`, search). That is why they grow by exactly 2 per unit of `ef`. They cannot be compared with the Vamana columns, which count every distance computation.
+
 | Configuration | ef | Recall@10 | Avg Dist Cmps | Avg Latency (µs) | P99 Latency (µs) |
 |---|---|---|---|---|---|
 | **HNSW M=8, efC=100** | 10 | 0.6203 | 68.0 | 187.7 | 343.9 |
@@ -82,6 +84,6 @@ The following table summarizes the search performance of HNSW under various conf
 
 ## 4. Analysis and Conclusion
 
-- **Distance Computation Efficiency**: HNSW M=16 is significantly more efficient in terms of graph traversal, requiring ~7x fewer distance computations (265 vs 1905) to reach 97-98% recall compared to the Vamana baseline.
-- **Latency Trade-off**: Despite the fewer computations, Vamana R=32 maintains lower query latency at high recall levels. This suggests that the Vamana search implementation is more cache-optimized or benefits from a more direct graph structure for the SIFT1M dataset.
+- **Distance Computation Efficiency**: Not established. The HNSW distance-computation counts above are estimates (see the note in 3.1), so no comparison with Vamana's measured counts can be drawn from this data.
+- **Latency Trade-off**: Vamana R=32 has lower query latency than HNSW at high recall levels. This suggests that the Vamana search implementation is more cache-optimized or benefits from a more direct graph structure for the SIFT1M dataset.
 - **Recall Frontier**: Vamana R=64 with ADC quantization provides the absolute highest recall (99.9%+) and handles high-accuracy requirements better than HNSW at the tested configurations.

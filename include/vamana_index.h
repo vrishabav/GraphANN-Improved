@@ -13,7 +13,7 @@ struct SearchResult
   double latency_us;         // search latency in microseconds
 };
 
-// Statistics about a built graph — used for analysis and reporting.
+// Statistics about a built graph - used for analysis and reporting.
 struct GraphStats {
     double avg_degree;
     uint32_t min_degree;

@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
 
         // Use baseline graph stats for nn1_degree (not directly accessible,
         // so we compute a proxy: how many other base points are within
-        // 2× the nearest-neighbor distance — density proxy)
-        // [Full degree access requires exposing graph_ — use a simpler proxy]
+        // 2× the nearest-neighbor distance - density proxy)
+        // [Full degree access requires exposing graph_ - use a simpler proxy]
         // Here we report it as 0; a post-processing step can join with hist CSV.
         uint32_t nn1_degree = 0;
 

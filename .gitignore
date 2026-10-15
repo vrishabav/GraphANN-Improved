@@ -11,10 +11,11 @@ REPORT.md
 tmp/
 data/
 
-# OS junk
+# Misc
 .DS_Store
 Thumbs.db
 Desktop.ini
+DiskANN-Vamana-Index Presentation.pdf
 
 # IDE / editor files
 .vscode/

@@ -31,7 +31,7 @@ float compute_l2sq_ea(const float *a, const float *b, uint32_t dim,
 {
     float sum = 0.0f;
     uint32_t i = 0;
-    // Process in 16-dim blocks — inner loop auto-vectorizes with -O3
+    // Process in 16-dim blocks - inner loop auto-vectorizes with -O3
     for (; i + 16 <= dim; i += 16)
     {
 #ifdef GRAPHANN_SIMD_REDUCTION
@@ -82,7 +82,7 @@ float compute_l2sq_asymmetric_ea(const float *query, const uint8_t *quantized,
 {
     float sum = 0.0f;
     uint32_t i = 0;
-    // Process in 16-dim blocks — inner loop auto-vectorizes with -O3
+    // Process in 16-dim blocks - inner loop auto-vectorizes with -O3
     for (; i + 16 <= dim; i += 16)
     {
         for (uint32_t j = i; j < i + 16; j++)

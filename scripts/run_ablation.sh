@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_ablation.sh — build-configuration ablation on SIFT1M.
+# run_ablation.sh - build-configuration ablation on SIFT1M.
 # Every combination of
 #   build:   baseline (--baseline: random start, empty graph, top-L prune)
 #            improved (medoid, random R-regular init, full visited set)

@@ -12,7 +12,7 @@
 
 \lstset{basicstyle=\ttfamily\small, breaklines=true, frame=single, backgroundcolor=\color{gray!10}}
 
-\title{Project Report: DiskANN Vamana Index --- Implementation, Optimization, and Analysis}
+\title{Project Report: DiskANN Vamana Index: Implementation, Optimization, and Analysis}
 \author{DA24B004, DA24B033, DA24B049}
 \date{}
 
@@ -34,7 +34,7 @@ construction, and search evaluation.
 
 The SIFT1M dataset is distributed in the \texttt{.fvecs} format, where each 
 vector is prefixed with its own 4-byte integer specifying its dimension (128). 
-This per-vector header is redundant since all vectors share the same dimension, and makes bulk loading inefficient --- the data cannot be read in one contiguous block since the header of each vector would need to be skipped over on every access.
+This per-vector header is redundant since all vectors share the same dimension, and makes bulk loading inefficient - the data cannot be read in one contiguous block since the header of each vector would need to be skipped over on every access.
 
 The script \texttt{scripts/convert\_vecs.py} converts all three files to a 
 flat binary format (\texttt{.fbin} for floats, \texttt{.ibin} for integers). Both formats share the same structure: a single 8-byte 
@@ -137,7 +137,7 @@ The Vamana index construction builds a navigable directed graph by iteratively i
 We identified four gaps between the repository implementation and the paper's specification:
 
 \subsubsection{Improvement 1: Medoid Initialization}
-\textbf{Gap:} The start node is set randomly (\texttt{start\_node\_ = rng() \% npts\_}). \textbf{Fix:} Compute the approximate medoid --- the data point nearest to the dataset centroid. The paper specifies ``let $s$ denote the medoid of the dataset $P$''. This ensures searches begin from the geometric centre, reducing average and worst-case traversal depth.
+\textbf{Gap:} The start node is set randomly (\texttt{start\_node\_ = rng() \% npts\_}). \textbf{Fix:} Compute the approximate medoid - the data point nearest to the dataset centroid. The paper specifies ``let $s$ denote the medoid of the dataset $P$''. This ensures searches begin from the geometric centre, reducing average and worst-case traversal depth.
 
 \subsubsection{Improvement 2: Two-Pass Build}
 \textbf{Gap:} A single pass uses the user-defined $\alpha$ throughout. \textbf{Fix:} The paper prescribes ``two passes over the dataset, the first with $\alpha=1$, and the second with a user-defined $\alpha \geq 1$''. Pass~1 builds dense local structure; Pass~2 adds long-range edges on top.
@@ -202,7 +202,7 @@ All results in this section were obtained by running the code on SIFT1M with the
 
 \subsection{Proposal D: Flat Sorted Vector (Data Structure Optimization)}
 
-\textbf{Change:} Replaced the \texttt{std::set<Candidate>} (Red-Black Tree) with a sorted \texttt{std::vector<Candidate>}. Insertions use \texttt{std::lower\_bound} + \texttt{std::rotate}. \textbf{Why it works:} For $L \leq 200$, the candidate list is $\sim$1.6\,KB --- it fits entirely in L1 cache. The $O(L)$ \texttt{memmove} cost is dominated by the $O(1)$ cache-line latency, whereas a Red-Black Tree incurs one heap allocation per insertion ($\sim$50--200\,ns per \texttt{malloc}).
+\textbf{Change:} Replaced the \texttt{std::set<Candidate>} (Red-Black Tree) with a sorted \texttt{std::vector<Candidate>}. Insertions use \texttt{std::lower\_bound} + \texttt{std::rotate}. \textbf{Why it works:} For $L \leq 200$, the candidate list is $\sim$1.6\,KB - it fits entirely in L1 cache. The $O(L)$ \texttt{memmove} cost is dominated by the $O(1)$ cache-line latency, whereas a Red-Black Tree incurs one heap allocation per insertion ($\sim$50--200\,ns per \texttt{malloc}).
 
 \begin{table}[H]
 \centering
@@ -370,7 +370,7 @@ The two-pass strategy (Pass~1 at $\alpha=1.0$, Pass~2 at user $\alpha$) was impl
 % ==============================================================================
 \section{Negative Results}
 
-Documenting negative results is important --- they show what was explored and why certain approaches fail for SIFT1M.
+Documenting negative results is important - they show what was explored and why certain approaches fail for SIFT1M.
 
 \begin{table}[H]
 \centering
@@ -380,8 +380,8 @@ Documenting negative results is important --- they show what was explored and wh
 \textbf{Experiment} & \textbf{Result} & \textbf{Root Cause} \\
 \midrule
 Multiple entry points ($k=8$) & No recall/latency improvement & SIFT1M lacks strong cluster structure \\
-PCA traversal (32-dim) & 0.50 recall at $L=75$ & SIFT has high intrinsic dimensionality \\
-PCA traversal (64-dim) & 0.84 recall at $L=75$ & Better but still 0.14 below exact \\
+PCA traversal (32-dim) & 0.50 recall at $L=75$ & Inconclusive: PCA lacks deflation \\
+PCA traversal (64-dim) & 0.84 recall at $L=75$ & Inconclusive (same issue) \\
 Quant-aware graph refinement & $-$0.006 recall & Re-pruning without new candidates \\
  & & makes the graph sparser \\
 Two-pass build with $R=64$ & Bus error (macOS) & Memory pressure during dense Pass~2 \\
@@ -393,11 +393,11 @@ Two-pass build with $R=64$ & Bus error (macOS) & Memory pressure during dense Pa
 
 \subsection{Multiple Entry Points ($k$-means)}
 
-Instead of starting every search from the single medoid, we computed $k=8$ cluster medoids via $k$-means and at query time selected the closest entry point (only $k$ extra distance computations). Despite implementation effort, this produced zero measurable improvement on SIFT1M. The reason is that SIFT1M's distribution is roughly uniform around the medoid --- all 8 cluster medoids end up near the dataset centre, so the ``closest entry point'' selection always picks a node in essentially the same region.
+Instead of starting every search from the single medoid, we computed $k=8$ cluster medoids via $k$-means and at query time selected the closest entry point (only $k$ extra distance computations). Despite implementation effort, this produced zero measurable improvement on SIFT1M. The reason is that SIFT1M's distribution is roughly uniform around the medoid - all 8 cluster medoids end up near the dataset centre, so the ``closest entry point'' selection always picks a node in essentially the same region.
 
 \subsection{PCA Traversal}
 
-We computed the top-$d'$ principal components of the dataset and projected all vectors into the reduced space. During search, distances were computed in the $d'$-dimensional PCA space (4$\times$ cheaper for $d'=32$), with exact re-ranking of the final candidates. At $d'=32$, recall dropped to 0.50 --- SIFT vectors encode 128-dimensional histogram gradients where all dimensions carry signal. At $d'=64$, recall reached 0.84, still 0.14 below exact. PCA projection is effective for datasets with low intrinsic dimensionality but not for SIFT.
+We computed the top-$d'$ principal components of the dataset and projected all vectors into the reduced space. During search, distances were computed in the $d'$-dimensional PCA space (4$\times$ cheaper for $d'=32$), with exact re-ranking of the final candidates. At $d'=32$, recall dropped to 0.50, and at $d'=64$ it reached 0.84, still 0.14 below exact. These numbers are inconclusive. Our \texttt{build\_pca} runs power iteration for each component without deflating the components already found, and only orthogonalises them afterwards. Every component therefore converges towards the top eigenvector, and components beyond the first are not true principal components. A correct PCA (deflation or orthogonalisation inside each iteration) is needed before drawing conclusions about SIFT.
 
 \subsection{Quantization-Aware Graph Refinement}
 
@@ -420,7 +420,7 @@ The tool computes for each query:
     \item \textbf{is\_hard}: whether baseline missed $\geq 1$ neighbour
 \end{itemize}
 
-\textbf{Key finding:} Hard queries have significantly higher start-node-to-query distance than easy queries. This directly supports the medoid hypothesis --- replacing the random start node with the centroid-nearest point reduces traversal distance for precisely those queries that benefit most, producing the dramatic P99 improvement.
+\textbf{Key finding:} Hard queries have significantly higher start-node-to-query distance than easy queries. This directly supports the medoid hypothesis - replacing the random start node with the centroid-nearest point reduces traversal distance for precisely those queries that benefit most, producing the dramatic P99 improvement.
 
 \subsection{Degree Distribution Analysis}
 
@@ -511,7 +511,7 @@ The most critical lesson: AI can write correct-looking code and plausible-soundi
 \begin{enumerate}
     \item \textbf{Algorithmic correctness:} The AI initially implemented \texttt{robust\_prune} using only the top-$L$ candidates from greedy search, not the full visited set. We had to read Section~2.3 of the paper carefully to identify this discrepancy and implement the paper-correct version. This single fix produced the largest quality improvement.
     
-    \item \textbf{Performance debugging:} When the two-pass build crashed with a bus error on $R=64$, the AI suggested memory allocation fixes. The actual root cause was thread-count $\times$ visited-set-size exceeding available memory. We fixed it by halving the thread count --- a systems-level insight the AI did not suggest.
+    \item \textbf{Performance debugging:} When the two-pass build crashed with a bus error on $R=64$, the AI suggested memory allocation fixes. The actual root cause was thread-count $\times$ visited-set-size exceeding available memory. We fixed it by halving the thread count - a systems-level insight the AI did not suggest.
     
     \item \textbf{Negative result interpretation:} The AI initially presented the $k$-means entry point experiment as a success. We had to run benchmarks, observe zero improvement, and reason about why SIFT1M's distribution makes cluster-based entry points ineffective.
     
@@ -531,9 +531,9 @@ The most critical lesson: AI can write correct-looking code and plausible-soundi
 \begin{enumerate}
     \item \textbf{Build improvements dominate search improvements.} Proposals A--D collectively save $\sim$30\% latency. Build-time fixes (medoid + $R=64$ + full-V) save 57\% at equivalent recall. Investing in graph quality is the higher-leverage strategy.
     
-    \item \textbf{Negative results are informative.} PCA, multi-entry-point, and quant-refinement all failed --- but each taught us about SIFT1M's structure (high intrinsic dimensionality, lack of clusters, sensitivity to sparsification).
+    \item \textbf{Negative results are informative.} Multi-entry-point and quant-refinement both failed - but each taught us about SIFT1M's structure (lack of clusters, sensitivity to sparsification). The PCA result is inconclusive because of an implementation flaw (no deflation).
     
-    \item \textbf{AI accelerates boilerplate, not thinking.} The hardest parts --- reading the paper, identifying the full-V fix, debugging crashes, interpreting failures --- were all human. AI excelled at I/O code, CLI parsers, and scaffolding.
+    \item \textbf{AI accelerates boilerplate, not thinking.} The hardest parts - reading the paper, identifying the full-V fix, debugging crashes, interpreting failures - were all human. AI excelled at I/O code, CLI parsers, and scaffolding.
     
     \item \textbf{Cross-platform development is hard.} A project that builds on one OS may crash on another due to subtle allocation semantics, compiler intrinsics, and shell differences.
 \end{enumerate}
@@ -543,6 +543,6 @@ The most critical lesson: AI can write correct-looking code and plausible-soundi
 % ==============================================================================
 \section{Conclusion}
 
-Starting from a baseline Vamana implementation, we achieved a \textbf{16\% latency reduction and 50\% P99 reduction at $\ge 0.988$ recall} through build-time improvements (medoid, random pre-init, full visited set to prune, $R=64$). We also discovered that search-time optimizations (ADC, early abandoning, dynamic beam) actually \emph{increased} latency without hand-tuned hardware SIMD instructions. We documented these negative experimental results and built analysis tools for hard query characterization and degree distribution study. The best configuration achieves \textbf{0.9965 Recall@10 at $L=75$} with 1387\,$\mu$s average latency, compared to the baseline 0.9828 at 849\,$\mu$s --- demonstrating that recall and tail latency can be significantly improved by investing in graph construction quality, even if it occasionally requires higher average scan depth.
+Starting from a baseline Vamana implementation, we achieved a \textbf{16\% latency reduction and 50\% P99 reduction at $\ge 0.988$ recall} through build-time improvements (medoid, random pre-init, full visited set to prune, $R=64$). We also discovered that search-time optimizations (ADC, early abandoning, dynamic beam) actually \emph{increased} latency without hand-tuned hardware SIMD instructions. We documented these negative experimental results and built analysis tools for hard query characterization and degree distribution study. The best configuration achieves \textbf{0.9965 Recall@10 at $L=75$} with 1387\,$\mu$s average latency, compared to the baseline 0.9828 at 849\,$\mu$s - demonstrating that recall and tail latency can be significantly improved by investing in graph construction quality, even if it occasionally requires higher average scan depth.
 
 \end{document}

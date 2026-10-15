@@ -1,7 +1,7 @@
 # Auto-normalize line endings
 * text=auto
 
-# Source code — always LF
+# Source code - always LF
 *.cpp text eol=lf
 *.h text eol=lf
 *.py text eol=lf
@@ -11,11 +11,11 @@
 *.cmake text eol=lf
 *.tex text eol=lf
 
-# Windows scripts — keep CRLF
+# Windows scripts - keep CRLF
 *.bat text eol=crlf
 *.ps1 text eol=crlf
 
-# Binary assets — don't touch
+# Binary assets - don't touch
 *.png binary
 *.jpg binary
 *.bin binary

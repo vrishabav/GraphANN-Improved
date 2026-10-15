@@ -244,7 +244,7 @@ At equal recall the R=64 graph needs a much smaller beam, which is where the lat
 
 ### HNSW Comparison
 
-A full **Hierarchical Navigable Small World (HNSW)** index is included for comparison; see [RESULTS.txt](RESULTS.txt) for its tables. Those HNSW and Vamana numbers come from an earlier run on a different machine, so compare them within that file only. The HNSW search allocates a fresh visited array for every layer of every query, which inflates its per-query cost relative to Vamana.
+A full **Hierarchical Navigable Small World (HNSW)** index is included for comparison; see [RESULTS.txt](RESULTS.txt) for its tables. Those HNSW and Vamana numbers come from an earlier run on a different machine, so compare them within that file only. The HNSW search allocates a fresh visited array for every layer of every query, which inflates its per-query cost relative to Vamana. Its distance-computation counts are estimated (about 2 per unit of `ef`), not counted, so only recall and latency are compared here.
 
 | Algorithm | Config | Recall@10 | Avg Latency |
 |---|---|---|---|
@@ -262,8 +262,8 @@ A full **Hierarchical Navigable Small World (HNSW)** index is included for compa
 | Dynamic beam width (with ADC) | Within ±2% of plain ADC, no gain | Branching in a very tight loop; SIFT rarely has long "highways" that would justify shrinking L |
 | Multiple entry points (k=8) | No benefit | SIFT1M lacks strong cluster structure |
 | Strict γ removal (γ=1.0) | -0.02 recall | Too aggressive pruning |
-| PCA traversal (32-dim) | 0.50 recall | SIFT has high intrinsic dimensionality |
-| PCA traversal (64-dim) | 0.84 recall | Better but still 0.14 below exact |
+| PCA traversal (32-dim) | 0.50 recall | Inconclusive: `build_pca` runs power iteration without deflating earlier components (it only orthogonalises afterwards), so components beyond the first are not true principal components |
+| PCA traversal (64-dim) | 0.84 recall | Same caveat; not evidence about SIFT's intrinsic dimensionality |
 | Quantization-aware refinement | -0.006 recall | Re-pruning without new candidates makes graph sparser |
 
 ---

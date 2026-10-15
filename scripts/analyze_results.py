@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-analyze_results.py — Visualise ablation study results and degree histograms.
+analyze_results.py - Visualise ablation study results and degree histograms.
 
 Run after run_ablation.sh has produced:
   - tmp/ablation_results.tsv
@@ -173,7 +173,7 @@ def plot_p99_mean_ratio(df):
 
     ax.set_xlabel("Search Beam Width L", fontsize=12)
     ax.set_ylabel("P99 / Mean Latency Ratio", fontsize=12)
-    ax.set_title("P99/Mean Latency Ratio — Effect of Medoid Initialization\n(SIFT1M, K=10)",
+    ax.set_title("P99/Mean Latency Ratio - Effect of Medoid Initialization\n(SIFT1M, K=10)",
                  fontsize=12)
     ax.axhline(y=1.0, color="gray", linestyle="--", linewidth=0.8)
     ax.legend(fontsize=9)

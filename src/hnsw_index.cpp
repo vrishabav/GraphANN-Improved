@@ -62,8 +62,8 @@ uint32_t HNSWIndex::random_level(std::mt19937& rng) const {
 // ============================================================================
 // Beam search at a single layer of the HNSW graph.
 // Starts from entry_point, maintains:
-//   - candidates: min-heap by distance (closest first) — the "frontier"
-//   - result:     max-heap by distance (farthest first) — top-ef found so far
+//   - candidates: min-heap by distance (closest first) - the "frontier"
+//   - result:     max-heap by distance (farthest first) - top-ef found so far
 // Terminates when the closest unvisited candidate is farther than the
 // farthest node in the result set (no improvement possible).
 //
@@ -78,13 +78,13 @@ HNSWIndex::search_layer(const float* query, uint32_t entry_point,
     float entry_dist = compute_l2sq(query, get_vector(entry_point), dim_);
     visited[entry_point] = true;
 
-    // candidates: min-heap (closest at top) — nodes to expand
+    // candidates: min-heap (closest at top) - nodes to expand
     // Use a vector + push_heap/pop_heap for efficiency
     std::vector<Candidate> candidates;
     candidates.reserve(ef + 1);
     candidates.push_back({entry_dist, entry_point});
 
-    // result: max-heap (farthest at top) — best ef found so far
+    // result: max-heap (farthest at top) - best ef found so far
     std::vector<Candidate> result;
     result.reserve(ef + 1);
     result.push_back({entry_dist, entry_point});
@@ -212,7 +212,7 @@ HNSWIndex::select_neighbors_heuristic(uint32_t node_id,
         for (uint32_t s : selected) {
             float dist_cand_to_s = compute_l2sq(get_vector(cand_id), get_vector(s), dim_);
             if (dist_cand_to_s < dist_to_node) {
-                // c is closer to s than to node_id — it's "covered" by s
+                // c is closer to s than to node_id - it's "covered" by s
                 good = false;
                 break;
             }

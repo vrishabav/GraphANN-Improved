@@ -102,7 +102,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
         visited_all.reserve(4 * L); // typically 2-4x L nodes are visited
 
     // Simple per-query visited/expanded tracking.
-    // vector<bool> uses 1 bit per entry so 1M points = 125KB each — fine.
+    // vector<bool> uses 1 bit per entry so 1M points = 125KB each - fine.
     std::vector<bool> visited_gen(npts_, false);
     std::vector<bool> expanded_gen(npts_, false);
 
@@ -206,7 +206,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
         // During build (return_visited=true): copy neighbor list under lock
         // to avoid data races with parallel insertions.
         // During search (return_visited=false): no writes happening, so read
-        // directly without locking or copying — eliminates malloc per expansion.
+        // directly without locking or copying - eliminates malloc per expansion.
         std::vector<uint32_t> neighbors_copy;
         const std::vector<uint32_t> *nbrs_ptr;
         if (!search_mode)
@@ -283,7 +283,7 @@ VamanaIndex::greedy_search(const float *query, uint32_t L, bool return_visited,
 // Robust Prune (Alpha-RNG Rule)
 // ============================================================================
 // Given a node and a set of candidates, greedily select neighbors that are
-// "diverse" — a candidate c is added only if it's not too close to any
+// "diverse" - a candidate c is added only if it's not too close to any
 // already-selected neighbor (within a factor of alpha).
 //
 // Formally: add c if for ALL already-chosen neighbors n:
@@ -790,7 +790,7 @@ void VamanaIndex::build_quantized_data()
 }
 
 // ============================================================================
-// Greedy Search — Quantized (ADC)
+// Greedy Search - Quantized (ADC)
 // ============================================================================
 // Same beam search as greedy_search(), but uses asymmetric distance
 // (float32 query vs uint8 dataset) for graph traversal. After the beam search
@@ -956,7 +956,7 @@ VamanaIndex::greedy_search_quantized(const float *query, uint32_t L, uint32_t K,
 }
 
 // ============================================================================
-// Greedy Search — PCA (low-dimensional traversal)
+// Greedy Search - PCA (low-dimensional traversal)
 // ============================================================================
 // Same beam search as greedy_search(), but computes distances in PCA-projected
 // space (pca_dim_ dims instead of 128). This reduces memory bandwidth and
@@ -1031,7 +1031,7 @@ VamanaIndex::greedy_search_pca(const float *query, const float *pca_query,
                 continue;
             mark_visited(nbr);
 
-            // Compute distance in PCA space — 4x cheaper than full 128-dim
+            // Compute distance in PCA space - 4x cheaper than full 128-dim
             float threshold = (candidates.size() >= L)
                                   ? candidates.back().first
                                   : FLT_MAX;
@@ -1130,7 +1130,7 @@ SearchResult VamanaIndex::search(const float *query, uint32_t K, uint32_t L,
 // thus contiguously in memory. This improves L2/L3 cache hit rates during search.
 //
 // Algorithm:
-//   1. BFS from medoid up to C hops — these are the "hot" nodes
+//   1. BFS from medoid up to C hops - these are the "hot" nodes
 //   2. Assign new IDs: hot nodes first (0..num_hot-1), rest after
 //   3. Remap all node IDs in graph_ and data_
 //   4. Update start_node_ and entry_points_
@@ -1296,7 +1296,7 @@ void VamanaIndex::build_pca(uint32_t pca_dim)
         }
 
         // Deflation: remove this component's contribution from future iterations
-        // (subtract its projection from each sample vector conceptually — done
+        // (subtract its projection from each sample vector conceptually - done
         //  implicitly by operating on the residual space in next iteration)
         // Orthogonalize against previous components (Gram-Schmidt)
         for (uint32_t prev = 0; prev < k; prev++)
@@ -1373,7 +1373,7 @@ void VamanaIndex::refine_with_quantization()
     std::cout << "Running quantization-aware graph refinement..." << std::endl;
     Timer ref_timer;
 
-    // We need alpha and R — read R from graph max degree, use alpha=1.2 default
+    // We need alpha and R - read R from graph max degree, use alpha=1.2 default
     uint32_t R = 0;
     for (uint32_t i = 0; i < npts_; i++)
         R = std::max(R, (uint32_t)graph_[i].size());
@@ -1397,7 +1397,7 @@ void VamanaIndex::refine_with_quantization()
             quant_candidates.push_back({d, nbr});
         }
 
-        // Reprune using quantized distances — keeps only diverse edges
+        // Reprune using quantized distances - keeps only diverse edges
         robust_prune(i, quant_candidates, alpha, R);
     }
 
@@ -1626,7 +1626,7 @@ void VamanaIndex::load(const std::string &index_path,
     graph_.resize(npts_);
     locks_ = std::vector<std::mutex>(npts_);
 
-    // Load entry points (new format) — fall back gracefully if not present
+    // Load entry points (new format) - fall back gracefully if not present
     uint32_t nep = 0;
     if (in.read(reinterpret_cast<char *>(&nep), 4) && nep > 0 && nep <= 64)
     {
@@ -1636,7 +1636,7 @@ void VamanaIndex::load(const std::string &index_path,
     }
     else
     {
-        // Old index format: no entry points saved — fall back to start_node_
+        // Old index format: no entry points saved - fall back to start_node_
         entry_points_ = {start_node_};
         num_entry_points_ = 1;
         // Rewind: the 4 bytes we read were actually the first node's degree
